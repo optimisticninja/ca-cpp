@@ -16,7 +16,6 @@ typedef enum {
     /// cell = rule_bits[index of partition in config.partition_permutations].
     INTERACTION_NEIGHBORHOOD_TO_RULE_BIT,
 
-    // TODO: below this line
     // FIXME: Dumb rule of my own devising, try to design playground to find interesting rules
     /// cell = rule_bits[index of partition in config.partition_permutations] ^ prev_cell.
     INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL
@@ -35,7 +34,10 @@ typedef enum {
     /// Left
     PARTITION_BIAS_LHS,
     /// Right
-    PARTITION_BIAS_RHS
+    // TODO: Implement for block CAs
+    PARTITION_BIAS_RHS,
+    // TODO: Used for block CAs where the non-overlapping blocks are wanted to be centered
+    PARTITION_BIAS_CENTER
 } partition_bias_t;
 
 // TODO: Reorder template parameters for types... values
@@ -78,13 +80,14 @@ template<size_t PartitionSize = 3, typename CellType = bool> class GatewayKey
     }
 
   public:
-    GatewayKey(const vector<CellType>& start_state, boundary_t boundary = BOUNDARY_ZERO,
-               partition_bias_t partition_bias = PARTITION_BIAS_LHS)
+    GatewayKey(const vector<CellType>& start_state, ca_t ca_type, boundary_t boundary = BOUNDARY_ZERO,
+               partition_bias_t partition_bias = PARTITION_BIAS_LHS,
+               interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT)
         : // TODO: Make configurable as multiple types are implemented
-          _ca_type(CA_1D),
+          _ca_type(ca_type),
           // TODO: Make configurable as rules are implemented
-          _interaction(INTERACTION_NEIGHBORHOOD_TO_RULE_BIT), _boundary(boundary),
-          _partition_bias(partition_bias), _start_state(start_state)
+          _interaction(interaction), _boundary(boundary), _partition_bias(partition_bias),
+          _start_state(start_state)
     {
         vector<CellType> neighborhood(PartitionSize);
         vector<vector<CellType>> permutations;

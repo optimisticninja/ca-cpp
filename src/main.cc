@@ -19,8 +19,16 @@ int main()
     const size_t PARTITION_SIZE = 3;
     vector<bool> start_state = wolfram_start_state(TOTAL_CELLS);
 
-    // Configure the CA
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, BOUNDARY_CYCLIC, PARTITION_BIAS_LHS);
+    // FIXME: Block CA is very uninteresting, need better block_interaction()
+    //     GatewayKey<PARTITION_SIZE, bool> gateway_key(
+    //         start_state,
+    //         CA_1D_BLOCK,
+    //         BOUNDARY_CYCLIC,
+    //         PARTITION_BIAS_LHS,
+    //         INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL
+    //     );
+    // Standard 1D CA
+    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_CYCLIC, PARTITION_BIAS_LHS);
     CA1D<PARTITION_SIZE, bool> ca(gateway_key);
 
     ca.evolve();
