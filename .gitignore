@@ -1,0 +1,5 @@
+**.o
+build/
+img/
+*.kdev4
+.kdev4/
