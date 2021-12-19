@@ -1,1 +1,1 @@
-add_executable(ca main.cc)
+add_executable(ca main.cc util/states.cc)

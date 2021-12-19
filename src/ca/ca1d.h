@@ -6,19 +6,22 @@
 #include <iostream>
 #include <vector>
 
+#include "../util/special_print.h"
 #include "gateway_key.h"
 
 using namespace std;
 
 // TODO: Reorder template parameters for types... values
 // TODO: Supported static type assertions
-// TODO: GTest
 template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
 {
   private:
     vector<CellType> _state;
     GatewayKey<PartitionSize, CellType> _gateway_key;
 
+#ifdef DEBUG
+  public:
+#endif
     void merge_partitions(vector<CellType>& partition, const vector<CellType>& lhs,
                           const vector<CellType>& rhs)
     {
@@ -34,27 +37,31 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
     vector<CellType> standard_partition(int cell)
     {
         int rounded_radius = _gateway_key.partition_size() / 2;
+        // FIXME: Negative index, leftover from cat-playground port
         int lhs = cell - rounded_radius;
         int rhs = cell + rounded_radius;
 
-        // Composite output partition from lhs_vec and rhs_vec
+        // Concatenation of bounded slices from lhs/rhs if at edge, otherwise a standard slice from array
         vector<CellType> partition;
 
-        // Adjust for biasing (keeping as a switch for future configurations)
-        // FIXME: RHS biasing not working
-        if (_gateway_key.partition_size() % 2) {
+        // Adjust for biasing
+        if (!(_gateway_key.partition_size() % 2)) {
             switch (_gateway_key.partition_bias()) {
-            case PARTITION_BIAS_LHS:
-                lhs -= 1;
-                break;
             case PARTITION_BIAS_RHS:
+                // Shift cell partition over 1
                 rhs += 1;
+                lhs += 1;
                 break;
             default:
                 break;
             }
+        } else {
+            // Possible FIXME
+            rhs += 1;
         }
 
+        // FIXME: Integer cast for size_t bothers me
+        // TODO: Case statements should be extracted to common function
         switch (_gateway_key.boundary()) {
         case BOUNDARY_CYCLIC:
             if /* Wrap LHS to end of state */ (lhs < 0) {
@@ -115,7 +122,10 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
      */
     CellType cell_interaction(size_t cell, size_t rule)
     {
-        vector<CellType> partition = this->partition(cell);
+        auto partition = this->partition(cell);
+        cout << "cell:\t\t" << cell << endl;
+        cout << "partition:\t";
+        print_vector(partition);
 
         switch (_gateway_key.interaction()) {
         case INTERACTION_NEIGHBORHOOD_TO_RULE_BIT: {
@@ -123,7 +133,9 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
             auto permutations = _gateway_key.partition_permutations();
             auto it = find(permutations.begin(), permutations.end(), partition);
             auto bit_offset = distance(permutations.begin(), it);
-            return (rule >> bit_offset) & 1;
+            auto new_state = (rule >> bit_offset) & 1;
+            cout << "update:\t\t" << _state[cell] << " -> " << new_state << endl;
+            return new_state;
         }
         case INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL:
             break;
@@ -132,7 +144,9 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
         return -1;
     }
 
+#ifndef DEBUG
   public:
+#endif
     CA1D(GatewayKey<PartitionSize, CellType> gateway_key)
         : _state(gateway_key.start_state()), _gateway_key(gateway_key)
     {
@@ -145,7 +159,7 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
     void evolve(size_t epochs = 25)
     {
         for (size_t rule = 0; rule < pow(2, _gateway_key.total_permutations()); rule++) {
-            cout << "RULE: " << rule << endl;
+            cout << "rule:\t" << rule << endl;
             vector<vector<bool>> state_history;
 
             // Reset state from previous runs
@@ -174,6 +188,8 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
      * @param state_history: 2D state history where rows are states over time
      * @param rule: rule to use as output filename
      */
+    // TODO: Use compressed format
+    // TODO: Make flaggable or part of external configuration
     void write_pgm(const vector<vector<CellType>>& state_history, int rule)
     {
         // TODO: Create output directory if not exists

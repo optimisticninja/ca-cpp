@@ -1,5 +1,7 @@
 #include "ca/ca1d.h"
 
+#include "util/states.h"
+
 using namespace std;
 
 /**
@@ -9,14 +11,7 @@ using namespace std;
  * preference
  */
 
-vector<bool> wolfram_start_state(size_t total_cells)
-{
-    vector<bool> start_state;
-    for (size_t i = 0; i < total_cells; i++)
-        start_state.push_back(true);
-    start_state[total_cells / 2 + 1] = false;
-    return start_state;
-}
+#define DEBUG
 
 int main()
 {
@@ -25,7 +20,7 @@ int main()
     vector<bool> start_state = wolfram_start_state(TOTAL_CELLS);
 
     // Configure the CA
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, BOUNDARY_ZERO, PARTITION_BIAS_RHS);
+    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, BOUNDARY_CYCLIC, PARTITION_BIAS_LHS);
     CA1D<PARTITION_SIZE, bool> ca(gateway_key);
 
     ca.evolve();
