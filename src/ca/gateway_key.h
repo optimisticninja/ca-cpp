@@ -5,11 +5,14 @@
 
 using namespace std;
 
+// TODO: Bound interaction types to relevant CA types
+
 typedef enum {
+    /// Standard 1D cellular automata as displayed in Wolfram's elementary automata
     CA_1D,
-    // TODO: below this line
+    /// A 1D cellular automata that moves along state in non-overlapping blocks. Block CAs are reversible
     CA_1D_BLOCK,
-    CA_1D_SECOND_ORDER
+    // TODO: CA_1D_SECOND_ORDER
 } ca_t;
 
 typedef enum {
@@ -19,6 +22,8 @@ typedef enum {
     // FIXME: Dumb rule of my own devising, try to design playground to find interesting rules
     /// cell = rule_bits[index of partition in config.partition_permutations] ^ prev_cell.
     INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL
+    // TODO: Create bijective rules for block cellular automata
+    // TODO: Experiment with seeding another CA via existing values for PRNG.
 } interaction_t;
 
 typedef enum {
@@ -40,9 +45,7 @@ typedef enum {
     PARTITION_BIAS_CENTER
 } partition_bias_t;
 
-// TODO: Reorder template parameters for types... values
-/// Configurable 1D CAT gateway.
-// PartitionSize is synonymous with neighborhood/block dependent on configuration
+/// Gateway key is synonymous with configuration/encoding of CA.
 template<size_t PartitionSize = 3, typename CellType = bool> class GatewayKey
 {
   private:
@@ -60,11 +63,15 @@ template<size_t PartitionSize = 3, typename CellType = bool> class GatewayKey
     vector<CellType> _start_state;
 
     /**
-     * Recursive function to generate all permutations of specified partition cells
+     * Recursive function to generate all permutations of specified partition cells. Used
+     * for finding the index of a partition within the exhaustive set in CA1D::*_interaction()
+     * and using it as a bit-shift within qualifying rules.
      * @param permutations: vector to store generated permutations in
      * @param partition: starting partition to permute
      * @param cell: cell to operate on
      */
+    // FIXME: Likely will remain unused as CAs get more complex, needs to be conditionally run on supported
+    // types (bool, enum)
     void generate_partition_states(vector<vector<CellType>>& permutations, vector<CellType>& partition,
                                    size_t cell)
     {
@@ -84,9 +91,7 @@ template<size_t PartitionSize = 3, typename CellType = bool> class GatewayKey
                partition_bias_t partition_bias = PARTITION_BIAS_LHS,
                interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT)
         : // TODO: Make configurable as multiple types are implemented
-          _ca_type(ca_type),
-          // TODO: Make configurable as rules are implemented
-          _interaction(interaction), _boundary(boundary), _partition_bias(partition_bias),
+          _ca_type(ca_type), _interaction(interaction), _boundary(boundary), _partition_bias(partition_bias),
           _start_state(start_state)
     {
         vector<CellType> neighborhood(PartitionSize);

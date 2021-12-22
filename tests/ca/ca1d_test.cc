@@ -108,4 +108,25 @@ TEST(CA1D4P, LHSBiasing)
     ASSERT_THAT(partition, ElementsAre(0, 0, 1, 1));
 }
 
+TEST(BlockCA1D, BlockSizeAndValues)
+{
+    size_t state_size = 31;
+    vector<bool> start_state = wolfram_start_state(state_size);
+    GatewayKey<4, bool> gateway_key(
+        start_state,
+        CA_1D_BLOCK,
+        BOUNDARY_ZERO,
+        PARTITION_BIAS_LHS,
+        INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL
+    );
+    CA1D<4, bool> ca(gateway_key);
+
+    vector<bool> state = ca.state();
+
+    for (size_t i = 0; i < state.size(); i++) {
+        vector<bool> partition = ca.partition(i);
+        ASSERT_EQ(state[i], partition[0]);
+    }
+}
+
 // TODO: ----------- END Parameterized tests

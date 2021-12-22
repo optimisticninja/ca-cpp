@@ -56,12 +56,10 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
                 break;
             }
         } else {
-            // Possible FIXME: investigate... forgot why
             rhs += 1;
         }
 
         // FIXME: Integer cast for size_t bothers me
-        // TODO: Case statements should be extracted to common function
         switch (_gateway_key.boundary()) {
         case BOUNDARY_CYCLIC:
             if /* Wrap LHS to end of state */ (lhs < 0) {
@@ -216,6 +214,8 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
             auto permutations = _gateway_key.partition_permutations();
             auto it = find(permutations.begin(), permutations.end(), partition);
             auto bit_offset = distance(permutations.begin(), it);
+
+            // For logging only
             vector<CellType> old_state;
             vector<CellType> new_state;
 
@@ -224,15 +224,15 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
                 old_state.push_back(_state.at(cell));
 
                 // NOTE: Implicitly cyclic and lhs biased
-                if (cell == 0) {
+                if (cell == 0)
                     prev_cell = _state.at(_state.size() - 1);
-                } else {
+                else
                     prev_cell = _state.at(cell - 1);
-                }
 
-                CellType new_cell_state = (rule >> bit_offset) & 1;
+                CellType new_cell_state = (rule >> bit_offset) ^ _state[cell - 1] & 1;
                 new_state.push_back(new_cell_state);
             }
+
             cout << "update:\t\t";
             print_vector(old_state);
             cout << " -> ";
@@ -301,9 +301,8 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
                         vector<CellType> new_state = block_interaction(block_start, rule);
 
                         // TEST: Splice new_state into _state
-                        for (size_t i = block_start; i < _gateway_key.partition_size(); i++) {
+                        for (size_t i = block_start; i < _gateway_key.partition_size(); i++)
                             _state[i] = new_state[i];
-                        }
                     }
 
                     state_history.push_back(_state);
@@ -322,12 +321,12 @@ template<size_t PartitionSize = 3, typename CellType = bool> class CA1D
      * @param state_history: 2D state history where rows are states over time
      * @param rule: rule to use as output filename
      */
-    // TODO: Use compressed image format
+    // TODO: Use compressed image format (preferably PNG)
     // TODO: Make flaggable or part of external configuration
+    // TODO: Configurable output directory
+    // TODO: Create output directory if it doesn't exist
     void write_pgm(const vector<vector<CellType>>& state_history, int rule)
     {
-        // TODO: Create output directory if not exists
-        // TODO: Default output directory with configurable option
         ofstream pgm("img/" + to_string(rule) + ".pgm", ios::out | ios::binary);
         // TODO: Assertion that state_history is not empty
         pgm << "P2\n" << state_history[0].size() << " " << state_history.size() << "\n" << 1 << "\n";
