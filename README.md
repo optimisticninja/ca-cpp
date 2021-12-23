@@ -8,6 +8,15 @@ Currently implemented:
 
 * Elementary CA
 
+TODO:
+
+* Game of life as base for 2D
+* 1D and 2D margolus for block implementation
+    * Use abstract CA and refactor code in blockca1d.h to adhere
+* Devise rule seeding/using CA PRNG (src/ca/capring.cc) for interaction
+* [Dynamic Rules in Elementary Celluar Automata](https://github.com/gojakuch/dynamic-rule-cellular-automata/blob/main/paper_SOECA.pdf)
+    - TODO: Create second-order rules from this implementation with similar "rule compiler"
+
 ## Terminology
 
 There is a lot of varying terminology between papers, this is my map for consistent code and more generic terms in some cases
@@ -25,3 +34,4 @@ There is a lot of varying terminology between papers, this is my map for consist
 
 * [Cellular Automata Transforms: Theory and Applications in Multimedia Compression, Encryption, and Modeling](https://www.amazon.com/Cellular-Automata-Transforms-Applications-Compression/dp/0792378571)
 * [Pseudorandom Pattern Generation by a 4-Neighborhood Cellular Automata Based on a Probabilistic Analysis](http://www.iaeng.org/publication/IMECS2008/IMECS2008_pp1908-1913.pdf)
+* [A Study and Comparison of First and Second Order Cellular Automata with Examples](https://ntnuopen.ntnu.no/ntnu-xmlui/bitstream/handle/11250/258721/351877_FULLTEXT01.pdf?sequence=3)

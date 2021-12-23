@@ -4,24 +4,22 @@
 
 using namespace std;
 
-/**
- * Terminology:
- *  - partition (synonymous with neighborhood or block)
- *  - radii (or "radius") possibly uneven "midway-point" of partition with biasing for left or right hand side
- * preference
- */
-
 #define DEBUG
 
 int main()
 {
     const size_t TOTAL_CELLS = 31;
-    const size_t PARTITION_SIZE = 3;
+    const size_t EPOCHS = 25;
+    const bool WRITE_IMAGES = true;
 
+    // Configure CA
     vector<bool> start_state = wolfram_start_state(TOTAL_CELLS);
+    GatewayKey<> gateway_key(start_state, CA_1D, BOUNDARY_CYCLIC);
 
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_CYCLIC);
-    CA1D<PARTITION_SIZE, bool> ca(gateway_key);
+    // Create CA
+    //  - template parameters are cell type, local transition output type, global transition output type and
+    //  partition size
+    CA1D<> ca(gateway_key);
 
-    ca.evolve();
+    ca.global_transition(EPOCHS, WRITE_IMAGES);
 }
