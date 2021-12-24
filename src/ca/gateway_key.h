@@ -19,11 +19,7 @@ typedef enum {
     /// cell = rule_bits[index of partition in config.partition_permutations].
     INTERACTION_NEIGHBORHOOD_TO_RULE_BIT,
 
-    // FIXME: Dumb rule of my own devising, try to design playground to find interesting rules
-    /// cell = rule_bits[index of partition in config.partition_permutations] ^ prev_cell.
-    INTERACTION_NEIGHBORHOOD_TO_RULE_BIT_XOR_PREV_CELL
-    // TODO: Create bijective rules for block cellular automata
-    // TODO: Experiment with seeding another CA via existing values for PRNG.
+    // TODO: Create/name rule for block CAs
 } interaction_t;
 
 typedef enum {

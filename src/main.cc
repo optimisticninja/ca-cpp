@@ -6,20 +6,15 @@ using namespace std;
 
 #define DEBUG
 
-int main()
+void elementary_ca()
 {
-    const size_t TOTAL_CELLS = 31;
+    const size_t STATE_SIZE = 31;
     const size_t EPOCHS = 25;
     const bool WRITE_IMAGES = true;
-
-    // Configure CA
-    vector<bool> start_state = wolfram_start_state(TOTAL_CELLS);
+    vector<bool> start_state = wolfram_start_state(STATE_SIZE);
     GatewayKey<> gateway_key(start_state, CA_1D, BOUNDARY_CYCLIC);
-
-    // Create CA
-    //  - template parameters are cell type, local transition output type, global transition output type and
-    //  partition size
-    CA1D<> ca(gateway_key);
-
-    ca.global_transition(EPOCHS, WRITE_IMAGES);
+    Alias1D::ElementaryCA ca(gateway_key);
+    ca.evolve_all(EPOCHS, WRITE_IMAGES);
 }
+
+int main() { elementary_ca(); }
