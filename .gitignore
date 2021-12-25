@@ -4,3 +4,4 @@ build/
 img/
 *.kdev4
 .kdev4/
+.cache/

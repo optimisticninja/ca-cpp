@@ -16,6 +16,7 @@
 // TODO: Refactor using the word "partition", apparently there are PCAs, so this term is not a good generic
 // TODO: Genericize partition per dimension (use attributes to create blocks or neighborhoods)
 // TODO: Use 'concept' from c++20 to restrict to supported types
+// TODO: Evolve rule, all doesn't scale to specific 2D implementations like life. Remove from base class
 //     concept Derived = std::is_same<U, Class1>::value || std::is_same<U, Class2>::value;
 using namespace std;
 
@@ -44,16 +45,14 @@ class CA
     }
 
     virtual vector<CellType> partition(size_t cell) = 0;
-    virtual LocalTransitionOutputType local_transition(size_t cell, size_t rule, bool log = true) = 0;
-    virtual GlobalTransitionOutputType global_transition(size_t rule) = 0;
 
   public:
     GatewayKey<PartitionSize> gateway_key() { return _gateway_key; }
     GlobalTransitionOutputType state() { return _state; }
     void state(GlobalTransitionOutputType state) { _state = state; };
 
-    virtual vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs) = 0;
-    virtual void evolve_all(size_t epochs, bool write_image = false) = 0;
+    //     virtual vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs) = 0;
+    //     virtual void evolve_all(size_t epochs, bool write_image = false) = 0;
 };
 
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
@@ -277,14 +276,16 @@ class IrreversibleCA1D
 // TODO: Finish block CA implementation, remove __attribute__((unused))
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType,
+PartitionSize>
 {
   private:
     /**
-     * Get partition of the local transition area (block)
+     * Get the block at target cell
      * @param cell target cell
      * @return slice of cells/boundary in partition
      */
+    // TODO: assertion on cell mod block size
     vector<CellType> partition(size_t cell)
     {
         // Concatenation of bounded slices from lhs/rhs if at edge, otherwise a standard slice from array
@@ -368,23 +369,17 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
      * @return: ending state
      */
     // TODO: Should this return state history? Or at all?
-    GlobalTransitionOutputType global_transition(size_t epochs = 25, bool write_image = false)
+    GlobalTransitionOutputType global_transition(size_t rule)
     {
-        for (size_t rule = 0; rule < pow(2, this->_gateway_key.total_permutations()); rule++) {
-            cout << "rule:\t" << rule << endl;
-            vector<GlobalTransitionOutputType> state_history;
+        for (size_t block_start = 0; block_start < this->_state.size();
+             block_start += this->_gateway_key.partition_size()) {
+            LocalTransitionOutputType new_state = local_transition(block_start, rule);
 
-            // Reset state from previous runs
-            this->_state = this->_gateway_key.start_state();
-            state_history.push_back(this->_state);
-
-            // Evolve
-            for (size_t epoch = 0; epoch < epochs; epoch++)
-                state_history.push_back(step(rule));
-
-            if (write_image)
-                write_pgm(state_history, rule);
+            for (size_t i = block_start; i < PartitionSize; i++)
+                this->_state[i] = new_state[i];
         }
+
+        return this->_state;
     }
 
   public:
@@ -398,22 +393,109 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
      * @param rule integer of enumerated rule
      * @return evolved state
      */
-    GlobalTransitionOutputType step(size_t rule)
+    vector<GlobalTransitionOutputType> evolve_rule(size_t rule)
     {
         for (size_t block_start = 0; block_start < this->_state.size();
              block_start += this->_gateway_key.partition_size()) {
             LocalTransitionOutputType new_state = local_transition(block_start, rule);
 
+            // Splice block back into state
             for (size_t i = block_start; i < PartitionSize; i++)
                 this->_state[i] = new_state[i];
         }
 
         return this->_state;
     }
+
+    /**
+     * Evolve all enumerated rules
+     */
+    void evolve_all(size_t epochs, bool write_image)
+    {
+        for (size_t rule = 0; rule < pow(2, this->_gateway_key.total_permutations()); rule++) {
+            cout << "rule:\t" << rule << endl;
+            vector<GlobalTransitionOutputType> state_history;
+
+            // Reset state from previous runs
+            this->_state = this->_gateway_key.start_state();
+            state_history.push_back(this->_state);
+
+            // Evolve
+            for (size_t epoch = 0; epoch < epochs; epoch++)
+                state_history.push_back(evolve_rule(rule));
+
+            if (write_image)
+                write_pgm(state_history, rule);
+        }
+    }
 };
 
+template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
+         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
+class CA2D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+{
+    CA2D(GatewayKey<PartitionSize, CellType> gateway_key)
+        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
+    {
+    }
+};
+
+template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
+         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
+class IrreversibleCA2D
+    : public CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+{
+  private:
+    LocalTransitionOutputType local_transition(size_t cell)
+    {
+        // TODO: Obtain neighbors
+
+        // Logic for Game of Life
+        if (this->_state[cell]) {
+            // TODO: If not two or three live neighbors, kill
+        } else {
+            // TODO: If three live neighbors, cell comes alive
+        }
+    }
+
+    GlobalTransitionOutputType global_transition()
+    {
+        // TODO: State is 2D, update GatewayKey to accomodate higher dimensions, then break this into x and y
+        for (size_t cell = 0; cell < this->state_size(); cell++) {
+            this->_state[cell] = local_transition(cell);
+        }
+    }
+
+  public:
+    IrreversibleCA2D(GatewayKey<PartitionSize, CellType> gateway_key)
+        : CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
+    {
+    }
+
+    /**
+     * Evolve the CA
+     */
+    // TODO: Can we easily create a GIF from pixels?
+    void evolve(size_t epochs, bool write_image)
+    {
+        vector<GlobalTransitionOutputType> state_history;
+
+        // Reset state from previous runs
+        this->_state = this->_gateway_key.start_state();
+        state_history.push_back(this->_state);
+
+        // Evolve
+        for (size_t epoch = 0; epoch < epochs; epoch++)
+            state_history.push_back(global_transition());
+
+        // TODO: Update this to create a GIF from bitmaps to observe over time
+        if (write_image)
+            write_pgm(state_history);
+    }
+};
 /// Aliases for well-known/named CAs
 namespace Alias1D
 {
     typedef IrreversibleCA1D<bool, bool, vector<bool>, 3> ElementaryCA;
-};
+    typedef IrreversibleCA2D<bool, bool, vector<vector<bool>>, 9> Life;
+}; // namespace Alias1D
