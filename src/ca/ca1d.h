@@ -29,6 +29,8 @@ using namespace std;
  * @tparam PartitionSize the size of the sliding window used to iterate over state for a transition (including
  * target cell)
  */
+// TODO: Derive GlobalTransitionOutputType after GateWay key accepts shape of CA as a vector to be
+// multidimensional
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
 class CA
@@ -44,15 +46,10 @@ class CA
     {
     }
 
-    virtual vector<CellType> partition(size_t cell) = 0;
-
   public:
     GatewayKey<PartitionSize> gateway_key() { return _gateway_key; }
     GlobalTransitionOutputType state() { return _state; }
     void state(GlobalTransitionOutputType state) { _state = state; };
-
-    //     virtual vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs) = 0;
-    //     virtual void evolve_all(size_t epochs, bool write_image = false) = 0;
 };
 
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
@@ -276,8 +273,7 @@ class IrreversibleCA1D
 // TODO: Finish block CA implementation, remove __attribute__((unused))
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType,
-PartitionSize>
+class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
 {
   private:
     /**
@@ -446,9 +442,34 @@ class IrreversibleCA2D
     : public CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
 {
   private:
+    /**
+     * Get the block at target cell
+     * @param cell target cell
+     * @return slice of cells/boundary in partition
+     */
+    // TODO: assertion on cell mod block size
+    vector<CellType> partition(__attribute__((unused)) size_t x, __attribute__((unused)) size_t y)
+    {
+        // Concatenation of bounded slices from lhs/rhs if at edge, otherwise a standard slice from array
+        vector<CellType> partition;
+
+        // TODO: Make neighborhood type configurable via gateway key (margolus, moore, etc.)
+        switch (this->_gateway_key.boundary()) {
+        case BOUNDARY_CYCLIC:
+            break;
+        case BOUNDARY_ZERO:
+            break;
+        default:
+            break;
+        }
+
+        return partition;
+    }
+
     LocalTransitionOutputType local_transition(size_t cell)
     {
         // TODO: Obtain neighbors
+        LocalTransitionOutputType partition = this->partition(cell);
 
         // Logic for Game of Life
         if (this->_state[cell]) {
@@ -475,7 +496,6 @@ class IrreversibleCA2D
     /**
      * Evolve the CA
      */
-    // TODO: Can we easily create a GIF from pixels?
     void evolve(size_t epochs, bool write_image)
     {
         vector<GlobalTransitionOutputType> state_history;
@@ -489,6 +509,7 @@ class IrreversibleCA2D
             state_history.push_back(global_transition());
 
         // TODO: Update this to create a GIF from bitmaps to observe over time
+        // https://github.com/lecram/gifenc
         if (write_image)
             write_pgm(state_history);
     }
@@ -497,5 +518,5 @@ class IrreversibleCA2D
 namespace Alias1D
 {
     typedef IrreversibleCA1D<bool, bool, vector<bool>, 3> ElementaryCA;
-    typedef IrreversibleCA2D<bool, bool, vector<vector<bool>>, 9> Life;
+    typedef IrreversibleCA2D<bool, bool, vector<vector<bool>>, 8> Life;
 }; // namespace Alias1D

@@ -17,4 +17,10 @@ void elementary_ca()
     ca.evolve_all(EPOCHS, WRITE_IMAGES);
 }
 
+void game_of_life()
+{
+    // TODO: Pass dimensionality as vector of shape (i.e. { 2, 2 }) to gateway key as means of scaling to
+    // higher dimensions
+}
+
 int main() { elementary_ca(); }

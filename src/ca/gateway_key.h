@@ -18,7 +18,7 @@ typedef enum {
 typedef enum {
     /// cell = rule_bits[index of partition in config.partition_permutations].
     INTERACTION_NEIGHBORHOOD_TO_RULE_BIT,
-
+    INTERACTION_GAME_OF_LIFE
     // TODO: Create/name rule for block CAs
 } interaction_t;
 
