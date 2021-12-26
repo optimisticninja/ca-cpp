@@ -11,51 +11,23 @@
 
 #include "../util/special_print.h"
 #include "../util/states.h"
+#include "ca.h"
 #include "gateway_key.h"
 
 // TODO: Refactor using the word "partition", apparently there are PCAs, so this term is not a good generic
 // TODO: Genericize partition per dimension (use attributes to create blocks or neighborhoods)
 // TODO: Use 'concept' from c++20 to restrict to supported types
-// TODO: Evolve rule, all doesn't scale to specific 2D implementations like life. Remove from base class
 //     concept Derived = std::is_same<U, Class1>::value || std::is_same<U, Class2>::value;
-using namespace std;
-
-/**
- * @brief abstract cellular automata
- * @tparam LocalTransitionOutputType the output type of the local transition function (cellular primitive or
- * collection for block output)
- * @tparam GlobalTransitionOutputType the output type of the global transition function (type of state
- * representation)
- * @tparam PartitionSize the size of the sliding window used to iterate over state for a transition (including
- * target cell)
- */
-// TODO: Derive GlobalTransitionOutputType after GateWay key accepts shape of CA as a vector to be
-// multidimensional
-template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class CA
-{
-  protected:
-    /// State representation
-    GlobalTransitionOutputType _state;
-    /// Configuration/encoding of the CA
-    GatewayKey<PartitionSize, CellType> _gateway_key;
-
-    CA(GatewayKey<PartitionSize, CellType> gateway_key)
-        : _state(gateway_key.start_state()), _gateway_key(gateway_key)
-    {
-    }
-
-  public:
-    GatewayKey<PartitionSize> gateway_key() { return _gateway_key; }
-    GlobalTransitionOutputType state() { return _state; }
-    void state(GlobalTransitionOutputType state) { _state = state; };
-};
+// TODO: Evolve rule, all doesn't scale to specific 2D implementations like life. Remove from base class
 
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
 class CA1D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
 {
+  private:
+    /// Configuration/encoding of the CA
+    GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> _gateway_key;
+
   protected:
     /**
      * @brief merge partitions when reaching the edge of state
@@ -71,10 +43,16 @@ class CA1D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutp
         copy(rhs.begin(), rhs.end(), back_inserter(partition));
     }
 
-    CA1D(GatewayKey<PartitionSize, CellType> gateway_key)
-        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
+    CA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
+        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(
+              gateway_key.start_state()),
+          _gateway_key(gateway_key)
+
     {
     }
+
+  public:
+    GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key() { return _gateway_key; }
 };
 
 // TODO: Create optimized elementary CA for bool only that uses bitsets
@@ -95,7 +73,7 @@ class IrreversibleCA1D
      */
     vector<CellType> partition(size_t cell)
     {
-        int rounded_radius = this->_gateway_key.partition_size() / 2;
+        int rounded_radius = this->gateway_key().partition_size() / 2;
         // FIXME: LHS is a negative index, leftover from cat-playground port
         int lhs = cell - rounded_radius;
         int rhs = cell + rounded_radius;
@@ -105,8 +83,8 @@ class IrreversibleCA1D
 
         // Adjust for biasing
         // Possible FIXME: Logic seems off and doesn't need to be switched
-        if (!(this->_gateway_key.partition_size() % 2)) {
-            switch (this->_gateway_key.partition_bias()) {
+        if (!(this->gateway_key().partition_size() % 2)) {
+            switch (this->gateway_key().partition_bias()) {
             case PARTITION_BIAS_RHS:
                 // Shift cell partition over 1
                 rhs += 1;
@@ -120,15 +98,15 @@ class IrreversibleCA1D
         }
 
         // Create partition by merging boundary/slicing
-        switch (this->_gateway_key.boundary()) {
+        switch (this->gateway_key().boundary()) {
         case BOUNDARY_CYCLIC:
             if /* Wrap LHS to end of state */ (lhs < 0) {
                 vector<CellType> lhs_vec(this->_state.begin() + this->_state.size() + lhs,
                                          this->_state.end());
                 vector<CellType> rhs_vec(this->_state.begin(), this->_state.begin() + rhs);
                 this->merge_partitions(partition, lhs_vec, rhs_vec);
-            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->_gateway_key.state_size()) {
-                int difference = rhs - this->_gateway_key.state_size();
+            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->gateway_key().state_size()) {
+                int difference = rhs - this->gateway_key().state_size();
                 vector<CellType> lhs_vec(this->_state.begin() + lhs, this->_state.end());
                 vector<CellType> rhs_vec(this->_state.begin(), this->_state.begin() + difference);
                 this->merge_partitions(partition, lhs_vec, rhs_vec);
@@ -141,8 +119,8 @@ class IrreversibleCA1D
                 vector<CellType> zero_boundary(abs(lhs), 0);
                 vector<CellType> in_bounds_state(this->_state.begin(), this->_state.begin() + rhs);
                 this->merge_partitions(partition, zero_boundary, in_bounds_state);
-            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->_gateway_key.state_size()) {
-                int difference = rhs - this->_gateway_key.state_size();
+            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->gateway_key().state_size()) {
+                int difference = rhs - this->gateway_key().state_size();
                 vector<CellType> in_bounds_state(this->_state.begin() + lhs, this->_state.end());
                 vector<CellType> zero_boundary(difference, 0);
                 this->merge_partitions(partition, in_bounds_state, zero_boundary);
@@ -175,11 +153,11 @@ class IrreversibleCA1D
         print_vector(partition);
         cout << endl;
 
-        switch (this->_gateway_key.interaction()) {
+        switch (this->gateway_key().interaction()) {
         // Rule Wolfram uses
         case INTERACTION_NEIGHBORHOOD_TO_RULE_BIT: {
             // get bit offset of partition in this->_gateway_key.partition_permutations
-            auto permutations = this->_gateway_key.partition_permutations();
+            auto permutations = this->gateway_key().partition_permutations();
             auto it = find(permutations.begin(), permutations.end(), partition);
             auto bit_offset = distance(permutations.begin(), it);
             auto new_state = (rule >> bit_offset) & 1;
@@ -222,7 +200,7 @@ class IrreversibleCA1D
 #ifndef DEBUG
   public:
 #endif
-    IrreversibleCA1D(GatewayKey<PartitionSize, CellType> gateway_key)
+    IrreversibleCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
         : CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
     {
     }
@@ -379,7 +357,7 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
     }
 
   public:
-    BlockCA1D(GatewayKey<PartitionSize, CellType> gateway_key)
+    BlockCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
         : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
     {
     }
@@ -426,97 +404,8 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
     }
 };
 
-template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class CA2D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
-{
-    CA2D(GatewayKey<PartitionSize, CellType> gateway_key)
-        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
-    {
-    }
-};
-
-template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class IrreversibleCA2D
-    : public CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
-{
-  private:
-    /**
-     * Get the block at target cell
-     * @param cell target cell
-     * @return slice of cells/boundary in partition
-     */
-    // TODO: assertion on cell mod block size
-    vector<CellType> partition(__attribute__((unused)) size_t x, __attribute__((unused)) size_t y)
-    {
-        // Concatenation of bounded slices from lhs/rhs if at edge, otherwise a standard slice from array
-        vector<CellType> partition;
-
-        // TODO: Make neighborhood type configurable via gateway key (margolus, moore, etc.)
-        switch (this->_gateway_key.boundary()) {
-        case BOUNDARY_CYCLIC:
-            break;
-        case BOUNDARY_ZERO:
-            break;
-        default:
-            break;
-        }
-
-        return partition;
-    }
-
-    LocalTransitionOutputType local_transition(size_t cell)
-    {
-        // TODO: Obtain neighbors
-        LocalTransitionOutputType partition = this->partition(cell);
-
-        // Logic for Game of Life
-        if (this->_state[cell]) {
-            // TODO: If not two or three live neighbors, kill
-        } else {
-            // TODO: If three live neighbors, cell comes alive
-        }
-    }
-
-    GlobalTransitionOutputType global_transition()
-    {
-        // TODO: State is 2D, update GatewayKey to accomodate higher dimensions, then break this into x and y
-        for (size_t cell = 0; cell < this->state_size(); cell++) {
-            this->_state[cell] = local_transition(cell);
-        }
-    }
-
-  public:
-    IrreversibleCA2D(GatewayKey<PartitionSize, CellType> gateway_key)
-        : CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
-    {
-    }
-
-    /**
-     * Evolve the CA
-     */
-    void evolve(size_t epochs, bool write_image)
-    {
-        vector<GlobalTransitionOutputType> state_history;
-
-        // Reset state from previous runs
-        this->_state = this->_gateway_key.start_state();
-        state_history.push_back(this->_state);
-
-        // Evolve
-        for (size_t epoch = 0; epoch < epochs; epoch++)
-            state_history.push_back(global_transition());
-
-        // TODO: Update this to create a GIF from bitmaps to observe over time
-        // https://github.com/lecram/gifenc
-        if (write_image)
-            write_pgm(state_history);
-    }
-};
 /// Aliases for well-known/named CAs
 namespace Alias1D
 {
     typedef IrreversibleCA1D<bool, bool, vector<bool>, 3> ElementaryCA;
-    typedef IrreversibleCA2D<bool, bool, vector<vector<bool>>, 8> Life;
 }; // namespace Alias1D

@@ -14,7 +14,7 @@ TEST(CA1D3P, PartitionSizeAndValues)
     const size_t PARTITION_SIZE = 3;
     const size_t STATE_SIZE = 31;
     vector<bool> start_state = wolfram_start_state(STATE_SIZE);
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
+    GatewayKey1D<vector<bool>, PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
     Alias1D::ElementaryCA ca(gateway_key);
 
     // TODO: Test boundaries edges instead of slicing entire state
@@ -36,7 +36,7 @@ TEST(CA1D4P, PartitionSizeAndValuesLHS)
     const size_t PARTITION_SIZE = 4;
     const size_t STATE_SIZE = 31;
     vector<bool> start_state = wolfram_start_state(STATE_SIZE);
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
+    GatewayKey1D<vector<bool>, PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
     IrreversibleCA1D<bool, bool, vector<bool>, PARTITION_SIZE> ca(gateway_key);
 
     // TODO: Test boundaries edges instead of slicing entire state
@@ -55,7 +55,7 @@ TEST(CA1D4P, PartitionSizeAndValuesRHS)
     const size_t PARTITION_SIZE = 4;
     const size_t STATE_SIZE = 31;
     vector<bool> start_state = wolfram_start_state(STATE_SIZE);
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_RHS);
+    GatewayKey1D<vector<bool>, PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_RHS);
     IrreversibleCA1D<bool, bool, vector<bool>, PARTITION_SIZE> ca(gateway_key);
 
     // TODO: Test boundaries edges instead of slicing entire state
@@ -73,7 +73,7 @@ TEST(CA1D4P, RHSBiasing)
     const size_t PARTITION_SIZE = 4;
     const size_t STATE_SIZE = 31;
     vector<bool> start_state = wolfram_start_state(STATE_SIZE);
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_RHS);
+    GatewayKey1D<vector<bool>, PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_RHS);
     IrreversibleCA1D<bool, bool, vector<bool>, PARTITION_SIZE> ca(gateway_key);
     vector<bool> partition = ca.partition(0);
     ASSERT_THAT(partition, ElementsAre(0, 1, 1, 1));
@@ -84,7 +84,7 @@ TEST(CA1D4P, LHSBiasing)
     const size_t PARTITION_SIZE = 4;
     const size_t STATE_SIZE = 31;
     vector<bool> start_state = wolfram_start_state(STATE_SIZE);
-    GatewayKey<PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
+    GatewayKey1D<vector<bool>, PARTITION_SIZE, bool> gateway_key(start_state, CA_1D, BOUNDARY_ZERO, PARTITION_BIAS_LHS);
     IrreversibleCA1D<bool, bool, vector<bool>, PARTITION_SIZE> ca(gateway_key);
     vector<bool> partition = ca.partition(0);
     ASSERT_THAT(partition, ElementsAre(0, 0, 1, 1));

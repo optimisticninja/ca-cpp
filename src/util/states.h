@@ -10,6 +10,8 @@ using namespace std;
 
 vector<bool> wolfram_start_state(size_t total_cells);
 
+vector<vector<bool>> random_2d_start_state(size_t x, size_t y);
+
 /**
  * Write state history to image file using state over time
  * @param state_history: 2D state history where rows are states over time
