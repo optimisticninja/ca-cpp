@@ -145,10 +145,10 @@ class GatewayKey2D : public GatewayKey<StateRepresentation, PartitionSize, CellT
 
   public:
     GatewayKey2D(const StateRepresentation& start_state, geometric_shape_t shape,
-                 boundary_t boundary = BOUNDARY_ZERO,
-                 interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT,
+                 boundary_t boundary = BOUNDARY_ZERO, interaction_t interaction = INTERACTION_GAME_OF_LIFE,
                  neighborhood_t neighborhood = NEIGHBORHOOD_MOORE)
-        : GatewayKey<StateRepresentation, PartitionSize, CellType>(start_state, shape, boundary, interaction)
+        : GatewayKey<StateRepresentation, PartitionSize, CellType>(start_state, shape, boundary, interaction),
+          _neighborhood(neighborhood)
     {
     }
 
