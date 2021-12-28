@@ -11,6 +11,23 @@ vector<bool> wolfram_start_state(size_t total_cells)
     return start_state;
 }
 
+vector<vector<bool>> glider(size_t x, size_t y)
+{
+    vector<vector<bool>> start_state(y);
+
+    for (size_t i = 0; i < y; i++)
+        for (size_t j = 0; j < x; j++)
+            start_state[i].push_back(0);
+
+    start_state[1][2] = true;
+    start_state[2][3] = true;
+    start_state[3][1] = true;
+    start_state[3][2] = true;
+    start_state[3][3] = true;
+
+    return start_state;
+}
+
 vector<vector<bool>> random_2d_start_state(size_t x, size_t y)
 {
     vector<vector<bool>> start_state(y);
@@ -18,6 +35,5 @@ vector<vector<bool>> random_2d_start_state(size_t x, size_t y)
     for (size_t i = 0; i < y; i++)
         for (size_t j = 0; j < x; j++)
             start_state[i].push_back(rand() % 2);
-
     return start_state;
 }

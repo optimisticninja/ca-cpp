@@ -44,15 +44,22 @@ class IrreversibleCA2D
 
         switch (this->gateway_key().neighborhood()) {
         case NEIGHBORHOOD_MOORE:
-            for (int i = y - 1; i <= (int) y + 1; i++) {
-                if (i < 0 || i > (int) this->state().size() - 1) {
+            // NOTE: Only collects cells within bounds and excludes
+            //       the rest, may need to be expanded for other interactions
+            for (int row = y - 1; row <= (int) y + 1; row++) {
+                // Exclude out of bound cells
+                if (row < 0 || row > (int) this->state().size() - 1) {
                     continue;
                 } else {
-                    for (int j = x - 1; j <= (int) x + 1; j++) {
-                        if (j < 0 || j > (int) this->_state[0].size() - 1)
-                            continue;
-                        else
-                            partition.push_back(this->_state[i][j]);
+                    for (int column = x - 1; column <= (int) x + 1; column++) {
+                        // Exclude cell itself
+                        if ((int) x != column && (int) y != row) {
+                            // Exclude out of bound cells
+                            if (column < 0 || column > (int) this->_state[0].size() - 1)
+                                continue;
+                            else
+                                partition.push_back(this->_state[row][column]);
+                        }
                     }
                 }
             }
@@ -78,33 +85,40 @@ class IrreversibleCA2D
                 living_neighbors += cell;
 
             if (cell) {
-                // If not two or three live neighbors, kill
-                if (living_neighbors != 2 && living_neighbors != 3)
+                // 2 or 3 neighbors survive, under/overcrowding
+                if (living_neighbors != 2 && living_neighbors != 3) {
+                    cout << "under/over-crowding" << endl;
                     this->_state[y][x] = false;
-
+                } else {
+                    cout << "survive" << endl;
+                }
             } else {
-                // If three live neighbors, cell comes alive
-                if (living_neighbors == 3)
+                // Reproduction
+                if (living_neighbors == 3) {
                     this->_state[y][x] = true;
+                    cout << "reproduction" << endl;
+                }
             }
             break;
         }
         default:
-            cerr << "ERROR: CA2D::local_transition() : unsupported interaction" << endl;
+            cerr << "ERROR: IrreversibleCA2D::local_transition() : unsupported interaction" << endl;
             exit(1);
         }
 
         return this->_state[y][x];
     }
 
+    // TODO: Optimize (group into blocks, only update those which changed, etc)
     GlobalTransitionOutputType global_transition()
     {
-        for (size_t y = 0; y < this->_state.size(); y++) {
-            for (size_t x = 0; x < this->_state[0].size(); x++) {
-                cout << "cell:\t\t(" << x << "," << y << ") " << this->_state[y][x];
-                CellType new_state = local_transition(x, y);
-                cout << " -> " << new_state << endl;
-                this->_state[y][x] = new_state;
+        for (size_t row = 0; row < this->_state.size(); row++) {
+            for (size_t column = 0; column < this->_state[0].size(); column++) {
+                cout << "cell:\t\t(" << column << "," << row << ")" << endl;
+                // Can optimize for early termination by moving neighbors here
+                CellType new_state = local_transition(column, row);
+                cout << "transition:\t" << this->_state[row][column] << " -> " << new_state << endl;
+                this->_state[row][column] = new_state;
             }
         }
 
@@ -127,15 +141,32 @@ class IrreversibleCA2D
         // Reset state from previous runs
         this->_state = this->gateway_key().start_state();
         state_history.push_back(this->_state);
+        GlobalTransitionOutputType last = this->_state;
+
+        if (write_image)
+            write_pgm_2d_state(last, 0);
 
         // Evolve
-        for (size_t epoch = 0; epoch < epochs; epoch++) {
-            GlobalTransitionOutputType step = global_transition();
-            state_history.push_back(step);
+        for (size_t epoch = 1; epoch < epochs + 1; epoch++) {
+            GlobalTransitionOutputType current = global_transition();
+
+            // FIXME: Some still life are oscillators, need more than one timestep
+            if (last == current) {
+                cout << "converged to still life" << endl;
+                break;
+
+                if (write_image)
+                    write_pgm_2d_state(current, epoch);
+            }
+
+            state_history.push_back(current);
             // TODO: Update this to create a GIF from bitmaps to observe over time
             // https://github.com/lecram/gifenc
+            // OR
+            // use pyplot
             if (write_image)
-                write_pgm_2d_state(step, epoch);
+                write_pgm_2d_state(current, epoch);
+            last = current;
         }
     }
 };
