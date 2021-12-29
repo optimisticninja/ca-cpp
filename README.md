@@ -7,6 +7,7 @@ Playground for finding reversible cellular automata transforms in a 1D N-neighbo
 Currently implemented:
 
 * Elementary CA
+* Game of Life
 
 TODO:
 
