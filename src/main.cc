@@ -21,7 +21,7 @@ void elementary_ca()
 
 void game_of_life()
 {
-    vector<vector<bool>> start_state = random_2d_start_state(100, 100);
+    vector<vector<bool>> start_state = random_2d_start_state(61, 61);
     GatewayKey2D<vector<vector<bool>>, 8, bool> gateway_key(start_state, CA_2D);
     Alias2D::Life ca(gateway_key);
     ca.evolve(EPOCHS, WRITE_IMAGES);

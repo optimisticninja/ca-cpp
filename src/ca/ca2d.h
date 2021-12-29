@@ -126,6 +126,17 @@ class IrreversibleCA2D
         return this->_state;
     }
 
+    void write_frame(ge_GIF* gif)
+    {
+        for (size_t i = 0; i < this->_state.size(); i++) {
+            for (size_t j = 0; j < this->_state[0].size(); j++) {
+                gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
+            }
+        }
+
+        ge_add_frame(gif, 25);
+    }
+
   public:
     IrreversibleCA2D(GatewayKey2D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
         : CA2D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
@@ -135,6 +146,9 @@ class IrreversibleCA2D
     /**
      * Evolve the CA
      */
+    // TODO: Configurable destination
+    // TODO: Create directory if it doesn't exist
+    // FIXME: Is there a limit on timesteps for oscillators to converge if stuck in oscillation?
     void evolve(size_t epochs, bool write_image)
     {
 
@@ -152,14 +166,9 @@ class IrreversibleCA2D
         state_history.push_back(this->_state);
 
         if (write_image) {
-            //             write_pgm_2d_state(last, 0);
-            for (size_t i = 0; i < this->_state.size(); i++) {
-                for (size_t j = 0; j < this->_state[0].size(); j++) {
-                    gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
-                }
-            }
-
-            ge_add_frame(gif, 10);
+            // NOTE: For PGM of individual timesteps
+            // write_pgm_2d_state(last, 0);
+            write_frame(gif);
         }
 
         // Evolve
@@ -172,31 +181,17 @@ class IrreversibleCA2D
                 break;
 
                 if (write_image) {
-                    //                     write_pgm_2d_state(current, epoch);
-                    for (size_t i = 0; i < this->_state.size(); i++) {
-                        for (size_t j = 0; j < this->_state[0].size(); j++) {
-                            gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
-                        }
-                    }
-
-                    ge_add_frame(gif, 10);
+                    // NOTE: For PGM of individual timesteps
+                    // write_pgm_2d_state(current, epoch);
+                    write_frame(gif);
                 }
             }
 
             state_history.push_back(current);
-            // TODO: Update this to create a GIF from bitmaps to observe over time
-            // https://github.com/lecram/gifenc
-            // OR
-            // use pyplot
             if (write_image) {
-                //                 write_pgm_2d_state(current, epoch);
-                for (size_t i = 0; i < this->_state.size(); i++) {
-                    for (size_t j = 0; j < this->_state[0].size(); j++) {
-                        gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
-                    }
-                }
-
-                ge_add_frame(gif, 10);
+                // NOTE: For PGM of individual timesteps
+                // write_pgm_2d_state(current, epoch);
+                write_frame(gif);
             }
             last = current;
         }

@@ -44,7 +44,8 @@ typedef enum {
     NEIGHBORHOOD_MOORE,
     NEIGHBORHOOD_VON_NEUMANN,
     NEIGHBORHOOD_SMITH,
-    NEIGHBORHOOD_COLE
+    NEIGHBORHOOD_COLE,
+    NEIGHBORHOOD_MARGOLUS
 } neighborhood_t;
 
 // TODO: Create type specific gateway keys. partition permutations are unneeded in higher dimensions, as is
