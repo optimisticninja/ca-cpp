@@ -1,5 +1,6 @@
 #pragma once
 
+#include "../util/gifenc.h"
 #include "ca.h"
 
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
@@ -84,8 +85,8 @@ class IrreversibleCA2D
             for (auto cell : partition)
                 living_neighbors += cell;
 
-            if (cell) {
-                // 2 or 3 neighbors survive, under/overcrowding
+            if (/* living */ cell) {
+                // 2 or 3 neighbors survive, die from under/overcrowding
                 if (living_neighbors != 2 && living_neighbors != 3) {
                     cout << "under/over-crowding" << endl;
                     this->_state[y][x] = false;
@@ -136,15 +137,30 @@ class IrreversibleCA2D
      */
     void evolve(size_t epochs, bool write_image)
     {
-        vector<GlobalTransitionOutputType> state_history;
 
         // Reset state from previous runs
         this->_state = this->gateway_key().start_state();
-        state_history.push_back(this->_state);
         GlobalTransitionOutputType last = this->_state;
+        vector<GlobalTransitionOutputType> state_history;
+        uint8_t pallette[6] = {
+            0x00, 0x00, 0x00, // Black
+            0xFF, 0xFF, 0xFF  // White
+        };
+        ge_GIF* gif =
+            ge_new_gif("img/life.gif", this->_state[0].size(), this->_state.size(), pallette, log2(2), -1, 0);
 
-        if (write_image)
-            write_pgm_2d_state(last, 0);
+        state_history.push_back(this->_state);
+
+        if (write_image) {
+            //             write_pgm_2d_state(last, 0);
+            for (size_t i = 0; i < this->_state.size(); i++) {
+                for (size_t j = 0; j < this->_state[0].size(); j++) {
+                    gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
+                }
+            }
+
+            ge_add_frame(gif, 10);
+        }
 
         // Evolve
         for (size_t epoch = 1; epoch < epochs + 1; epoch++) {
@@ -155,8 +171,16 @@ class IrreversibleCA2D
                 cout << "converged to still life" << endl;
                 break;
 
-                if (write_image)
-                    write_pgm_2d_state(current, epoch);
+                if (write_image) {
+                    //                     write_pgm_2d_state(current, epoch);
+                    for (size_t i = 0; i < this->_state.size(); i++) {
+                        for (size_t j = 0; j < this->_state[0].size(); j++) {
+                            gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
+                        }
+                    }
+
+                    ge_add_frame(gif, 10);
+                }
             }
 
             state_history.push_back(current);
@@ -164,10 +188,19 @@ class IrreversibleCA2D
             // https://github.com/lecram/gifenc
             // OR
             // use pyplot
-            if (write_image)
-                write_pgm_2d_state(current, epoch);
+            if (write_image) {
+                //                 write_pgm_2d_state(current, epoch);
+                for (size_t i = 0; i < this->_state.size(); i++) {
+                    for (size_t j = 0; j < this->_state[0].size(); j++) {
+                        gif->frame[i * this->_state[0].size() + j] = this->_state[i][j] * 255;
+                    }
+                }
+
+                ge_add_frame(gif, 10);
+            }
             last = current;
         }
+        ge_close_gif(gif);
     }
 };
 
