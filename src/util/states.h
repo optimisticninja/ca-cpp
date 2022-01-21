@@ -1,7 +1,9 @@
 #pragma once
 
 #include <fstream>
+#include <iomanip>
 #include <iostream>
+#include <sstream>
 #include <sys/stat.h>
 #include <unistd.h>
 #include <vector>
@@ -70,7 +72,9 @@ void write_pgm_2d_state(const GlobalTransitionOutputType& timestep, int epoch, c
         mkdir(directory, 0700);
     }
 
-    ofstream pgm(string(directory) + "/" + to_string(epoch) + ".pgm", ios::out | ios::binary);
+    ostringstream ss;
+    ss << setw(6) << setfill('0') << epoch;
+    ofstream pgm(string(directory) + "/" + ss.str() + ".pgm", ios::out | ios::binary);
     pgm << "P2\n" << timestep[0].size() << " " << timestep.size() << "\n" << 1 << "\n";
 
     for (auto row : timestep) {
