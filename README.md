@@ -11,7 +11,6 @@ Currently implemented:
 
 TODO:
 
-* Game of life as base for 2D
 * 1D/2D margolus, critters, tron rule for block implementation
     - See BlockCA1D in ca1d.h, partitioning and evolution loop written - need to implement rule
 * [Dynamic Rules in Elementary Celluar Automata](https://github.com/gojakuch/dynamic-rule-cellular-automata/blob/main/paper_SOECA.pdf)
