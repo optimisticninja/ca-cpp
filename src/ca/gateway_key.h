@@ -22,7 +22,7 @@ typedef enum {
 } interaction_t;
 
 typedef enum {
-    /// When boundary is reached, wrap and grab cells from opposite side of partition
+    /// When boundary is reached, wrap and grab cells from opposite side of partition (also known as periodic)
     BOUNDARY_CYCLIC,
     /// When boundary is reached, use zeroes for needed partition cells
     BOUNDARY_ZERO
@@ -47,6 +47,9 @@ typedef enum {
     NEIGHBORHOOD_COLE,
     NEIGHBORHOOD_MARGOLUS
 } neighborhood_t;
+
+// TODO:
+typedef enum { UNIFORM, HYBRID } uniformity_t;
 
 // TODO: Create type specific gateway keys. partition permutations are unneeded in higher dimensions, as is
 // bias
