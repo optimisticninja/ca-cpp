@@ -11,8 +11,8 @@
 using namespace std;
 
 vector<bool> wolfram_start_state(size_t total_cells);
-
-vector<vector<bool>> random_2d_start_state(size_t x, size_t y);
+vector<bool> random_1d_start_state(size_t size, double probability = 0.3);
+vector<vector<bool>> random_2d_start_state(size_t x, size_t y, double probability = 0.3);
 vector<vector<bool>> glider(size_t x, size_t y);
 
 /**

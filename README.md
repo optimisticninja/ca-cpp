@@ -1,13 +1,16 @@
-# ca
+# ca-cpp
 
 *In development*
 
-Playground for finding reversible cellular automata transforms in a 1D N-neighborhood cellular space.
+Playground for different cellular automata
 
 Currently implemented:
 
-* Elementary CA
-* Game of Life
+* 1D
+	* Elementary CA
+	* Second-order CA
+* 2D
+	* Game of Life
 
 TODO:
 
@@ -15,7 +18,7 @@ TODO:
     - See BlockCA1D in ca1d.h, partitioning and evolution loop written - need to implement rule
 * [Dynamic Rules in Elementary Celluar Automata](https://github.com/gojakuch/dynamic-rule-cellular-automata/blob/main/paper_SOECA.pdf)
     - TODO: Create second-order rules from this implementation with similar "rule compiler"
-* Devise rule seeding/using CA PRNG (src/ca/capring.cc) for translation
+* Hashlife algorithm
 
 ## Terminology
 
@@ -24,7 +27,7 @@ There is a lot of varying terminology between papers, this is my map for consist
 | term | definition | type |
 | --- | --- | --- |
 | gateway key | the encoding/configuration of the cellular automata (initial state, partition size, total cells, boundary rule, etc.) |
-| partition | the operating area (including the cell) when the CA is sequentially (over a block or neighborhood) updating state |
+| partition | the operating area (sometimes including the cell) when the CA is sequentially (over a block or neighborhood) updating state |
 | partition size | the total number of cells in the partition  |
 | neighborhood | the cells surrounding target cell in the operating area | CA_1D
 | block | a non-overlapping partition of the CA state to operate on. instead of updating at the cellular level, the whole block is updated | CA_1D_BLOCK

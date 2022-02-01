@@ -248,62 +248,86 @@ class IrreversibleCA1D
     }
 };
 
-// TODO: Finish block CA implementation, remove __attribute__((unused))
+// TODO: Create optimized elementary CA for bool only that uses bitsets
+// TODO: Condense logging into a single line
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+class ReversibleCA1D
+    : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
 {
+#ifdef DEBUG
+  public:
+#else
   private:
+#endif
+
+    vector<CellType> previous_generation;
+
     /**
-     * Get the block at target cell
-     * @param cell target cell
-     * @return slice of cells/boundary in partition
+     * Sliding window of operation across entire state. This is the neighborhood size + 1
+     * @param cell index of the target cell in state
+     * @return neighborhood including @cell
      */
-    // TODO: assertion on cell mod block size
     vector<CellType> partition(size_t cell)
     {
-        // Concatenation of bounded slices from lhs/rhs if at edge, otherwise a standard slice from array
+        int rounded_radius = this->gateway_key().partition_size() / 2;
+        // FIXME: LHS is a negative index, leftover from cat-playground port
+        int lhs = cell - rounded_radius;
+        int rhs = cell + rounded_radius;
+
+        // Concatenation of in/out of bounds slices if at edge, otherwise a standard slice
         vector<CellType> partition;
 
-        // TODO: Adjust for biasing
-        if (!(this->_gateway_key.partition_size() % 2)) {
-            switch (this->_gateway_key.partition_bias()) {
+        // Adjust for biasing
+        // Possible FIXME: Logic seems off and doesn't need to be switched
+        if (!(this->gateway_key().partition_size() % 2)) {
+            switch (this->gateway_key().partition_bias()) {
             case PARTITION_BIAS_RHS:
-                break;
-            case PARTITION_BIAS_CENTER:
+                // Shift cell partition over 1
+                rhs += 1;
+                lhs += 1;
                 break;
             default:
                 break;
             }
+        } else {
+            rhs += 1;
         }
 
-        size_t difference = this->_gateway_key.state_size() - cell;
-        int bounded_cells = difference - this->_gateway_key.partition_size();
-
-        switch (this->_gateway_key.boundary()) {
+        // Create partition by merging boundary/slicing
+        switch (this->gateway_key().boundary()) {
         case BOUNDARY_CYCLIC:
-            if (bounded_cells < 0) {
-                vector<CellType> boundary(this->_state.begin(), this->_state.begin() + abs(bounded_cells));
-                vector<CellType> in_bounds(this->_state.begin() + cell, this->_state.end());
-                merge_partitions(partition, in_bounds, boundary);
-            } else {
-                partition =
-                    vector<CellType>(this->_state.begin() + cell,
-                                     this->_state.begin() + cell + this->_gateway_key.partition_size());
+            if /* Wrap LHS to end of state */ (lhs < 0) {
+                vector<CellType> lhs_vec(this->_state.begin() + this->_state.size() + lhs,
+                                         this->_state.end());
+                vector<CellType> rhs_vec(this->_state.begin(), this->_state.begin() + rhs);
+                this->merge_partitions(partition, lhs_vec, rhs_vec);
+            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->gateway_key().state_size()) {
+                int difference = rhs - this->gateway_key().state_size();
+                vector<CellType> lhs_vec(this->_state.begin() + lhs, this->_state.end());
+                vector<CellType> rhs_vec(this->_state.begin(), this->_state.begin() + difference);
+                this->merge_partitions(partition, lhs_vec, rhs_vec);
+            } /* Otherwise, just slice */ else {
+                partition = vector<CellType>(this->_state.begin() + lhs, this->_state.begin() + rhs);
             }
             break;
         case BOUNDARY_ZERO:
-            if (bounded_cells < 0) {
-                vector<CellType> boundary(abs(bounded_cells), 0);
-                vector<CellType> in_bounds(this->_state.begin() + cell, this->_state.end());
-                merge_partitions(partition, in_bounds, boundary);
-            } else {
-                partition =
-                    vector<CellType>(this->_state.begin() + cell,
-                                     this->_state.begin() + cell + this->_gateway_key.partition_size());
+            if /* Wrap LHS to end of state */ (lhs < 0) {
+                vector<CellType> zero_boundary(abs(lhs), 0);
+                vector<CellType> in_bounds_state(this->_state.begin(), this->_state.begin() + rhs);
+                this->merge_partitions(partition, zero_boundary, in_bounds_state);
+            } /* Wrap RHS to beginning of state */ else if ((size_t) rhs > this->gateway_key().state_size()) {
+                int difference = rhs - this->gateway_key().state_size();
+                vector<CellType> in_bounds_state(this->_state.begin() + lhs, this->_state.end());
+                vector<CellType> zero_boundary(difference, 0);
+                this->merge_partitions(partition, in_bounds_state, zero_boundary);
+            } /* Otherwise, just slice */ else {
+                partition = vector<CellType>(this->_state.begin() + lhs, this->_state.begin() + rhs);
             }
             break;
         default:
+            cerr << "ERROR: CA1D::partition : unsupported boundary type" << endl;
+            exit(1);
             break;
         }
 
@@ -311,92 +335,113 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
     }
 
     /**
-     * Execute the state transition rule for a block
-     * @param cell: the index of the cell in state
-     * @param rule: the rule number to be used in the interaction
+     * Execute the local state transition rule (partition maps to a permutation index used for getting that
+     * bit in the rule)
+     * @param cell the index of the cell in state
+     * @param rule the rule number to be used in the interaction
+     * @param log log single-cell state changes
      * @return: new cell state
      */
-    LocalTransitionOutputType local_transition(size_t cell, __attribute__((unused)) size_t rule,
-                                               __attribute__((unused)) bool log = true)
+    LocalTransitionOutputType local_transition(size_t cell, size_t rule, bool log = false)
     {
         auto partition = this->partition(cell);
-        LocalTransitionOutputType new_state;
-
+        cout << "cell:\t\t" << cell << endl;
         cout << "partition:\t";
         print_vector(partition);
         cout << endl;
 
-        // TODO: Trim excess from block added during translation
-        switch (this->_gateway_key.interaction()) {
-        default:
-            cerr << "ERROR: CA1D::local_transition() : unsupported transition" << endl;
-            exit(-1);
-        }
+        switch (this->gateway_key().interaction()) {
+        case INTERACTION_SECOND_ORDER_NEIGHBORHOOD_TO_RULE_BIT: {
+            // get bit offset of partition in this->_gateway_key.partition_permutations
+            auto permutations = this->gateway_key().partition_permutations();
+            auto it = find(permutations.begin(), permutations.end(), partition);
+            auto bit_offset = distance(permutations.begin(), it);
+            auto first_order_state = (rule >> bit_offset) & 1;
+            LocalTransitionOutputType new_state =
+                previous_generation[cell] != first_order_state ? true : false;
 
-        return new_state;
+            if (log)
+                cout << "update:\t\t" << this->_state[cell] << " -> " << first_order_state << endl;
+            return new_state;
+        }
+        default:
+            cerr << "ERROR: ReversibleCA1D::local_transition(): unimplemented transition" << endl;
+            exit(1);
+            break;
+        }
     }
 
     /**
-     * Evolve the configured CA for @epochs (global transition function)
-     * @param epochs: number of timesteps to run evolution for (entire state update)
-     * @param write_image: write PGM files to observe state over time visually
-     * @return: ending state
+     * Evolve the full state from one timestep to another
+     * @param rule rule number to use in local transition
+     * @return ending state
      */
-    // TODO: Should this return state history? Or at all?
     GlobalTransitionOutputType global_transition(size_t rule)
     {
-        for (size_t block_start = 0; block_start < this->_state.size();
-             block_start += this->_gateway_key.partition_size()) {
-            LocalTransitionOutputType new_state = local_transition(block_start, rule);
+        cout << "start state 1:\t";
+        print_vector(previous_generation);
+        cout << endl;
+        cout << "start state 2:\t";
+        print_vector(this->_state);
+        cout << endl;
 
-            for (size_t i = block_start; i < PartitionSize; i++)
-                this->_state[i] = new_state[i];
-        }
+        GlobalTransitionOutputType new_state(this->_state.begin(), this->_state.end());
 
+        for (size_t cell = 0; cell < new_state.size(); cell++)
+            new_state[cell] = local_transition(cell, rule);
+
+        // State transition
+        previous_generation = this->_state;
+        this->state(new_state);
+        cout << "state: ";
+        print_vector(this->_state);
+        cout << endl;
         return this->_state;
     }
 
+#ifndef DEBUG
   public:
-    BlockCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
-        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
+#endif
+    ReversibleCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
+        : CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key),
+          previous_generation(random_1d_start_state(this->_state.size()))
     {
     }
 
     /**
-     * Evolve entire state for one epoch
-     * @param rule integer of enumerated rule
-     * @return evolved state
+     * Evolve @rule for @epochs
+     * @param rule rule number
+     * @param epochs number of timesteps to evolve for
+     * @return vector of state history over time
      */
-    vector<GlobalTransitionOutputType> evolve_rule(size_t rule)
+    vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs)
     {
-        for (size_t block_start = 0; block_start < this->_state.size();
-             block_start += this->_gateway_key.partition_size()) {
-            LocalTransitionOutputType new_state = local_transition(block_start, rule);
+        cout << "rule:\t" << rule << endl;
+        vector<GlobalTransitionOutputType> state_history;
+        state_history.push_back(previous_generation);
+        state_history.push_back(this->_state);
 
-            // Splice block back into state
-            for (size_t i = block_start; i < PartitionSize; i++)
-                this->_state[i] = new_state[i];
-        }
+        // Evolve for @epochs and generate state history
+        for (size_t epoch = 0; epoch < epochs; epoch++)
+            state_history.push_back(global_transition(rule));
 
-        return this->_state;
+        return state_history;
     }
 
     /**
-     * Evolve all enumerated rules
+     * Evolve all rules for @epochs (optionally write images)
+     * @param epochs number of timesteps to evolve each rule for
+     * @param write_image write PGM to observe visually
      */
-    void evolve_all(size_t epochs, bool write_image)
+    void evolve_all(size_t epochs, bool write_image = false)
     {
-        for (size_t rule = 0; rule < pow(2, this->_gateway_key.total_permutations()); rule++) {
-            cout << "rule:\t" << rule << endl;
-            vector<GlobalTransitionOutputType> state_history;
+        cout << "start state:\t";
+        print_vector(this->gateway_key().start_state());
+        cout << endl;
 
-            // Reset state from previous runs
-            this->_state = this->_gateway_key.start_state();
-            state_history.push_back(this->_state);
-
-            // Evolve
-            for (size_t epoch = 0; epoch < epochs; epoch++)
-                state_history.push_back(evolve_rule(rule));
+        // Enumerate all rules dependent on the total permutations
+        for (size_t rule = 0; rule < pow(2, this->gateway_key().total_permutations()); rule++) {
+            vector<GlobalTransitionOutputType> state_history = evolve_rule(rule, epochs);
 
             if (write_image)
                 write_pgm(state_history, rule);
@@ -408,4 +453,5 @@ class BlockCA1D : public CA1D<CellType, LocalTransitionOutputType, GlobalTransit
 namespace Alias1D
 {
     typedef IrreversibleCA1D<bool, bool, vector<bool>, 3> ElementaryCA;
+    typedef ReversibleCA1D<bool, bool, vector<bool>, 3> SecondOrderCA;
 }; // namespace Alias1D
