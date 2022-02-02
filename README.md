@@ -22,16 +22,20 @@ TODO:
 
 ## Terminology
 
-There is a lot of varying terminology between papers, this is my map for consistent code and more generic terms in some cases
+There is a lot of varying terminology between papers, this is my map for consistent code and more generic terms in some cases.
+
+*NOTE*
+
+Partitioning cellular automata (PCAs) will always be referred to as block cellular automata, as 'partition' is a good term for a low-level abstraction of the operating area during local transition (the block or neighborhood).
 
 | term | definition | type |
 | --- | --- | --- |
-| gateway key | the encoding/configuration of the cellular automata (initial state, partition size, total cells, boundary rule, etc.) |
-| partition | the operating area (sometimes including the cell) when the CA is sequentially (over a block or neighborhood) updating state |
-| partition size | the total number of cells in the partition  |
-| neighborhood | the cells surrounding target cell in the operating area | CA_1D
-| block | a non-overlapping partition of the CA state to operate on. instead of updating at the cellular level, the whole block is updated | CA_1D_BLOCK
-| bias | when dealing with even number partitions, this is the side to pull the extra cell from (right or left)                        |       CA_1D*                                                          |
+| gateway key | the encoding/configuration of the cellular automata (initial state, partition size, total cells, boundary rule, etc.) | * |
+| partition | the operating area (sometimes including the cell) when the CA is sequentially (over a block or neighborhood) updating state | * |
+| partition size | the total number of cells in the partition (block or neighborhood)  | * |
+| neighborhood | the cells surrounding target cell in the operating area | CA_1D |
+| block | a non-overlapping partition of the CA state to operate on. instead of updating at the cellular level, the whole block is updated | CA_1D_BLOCK |
+| bias | when dealing with even number partitions, this is the side to pull the extra cell from (right or left) | CA_1D* |
 
 ## References
 
