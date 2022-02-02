@@ -2,6 +2,8 @@
 
 #include <random>
 
+using namespace std;
+
 static random_device rd;
 static mt19937 mt(rd());
 
