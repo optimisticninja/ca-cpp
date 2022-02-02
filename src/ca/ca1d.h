@@ -119,9 +119,7 @@ class CA1D : public CA<CellType, StateRepresentation>
     }
 
     CA1D(GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key)
-        : CA<CellType, StateRepresentation>(
-              gateway_key.start_state()),
-          _gateway_key(gateway_key)
+        : CA<CellType, StateRepresentation>(gateway_key.start_state()), _gateway_key(gateway_key)
     {
     }
 
@@ -136,8 +134,7 @@ class CA1D : public CA<CellType, StateRepresentation>
 // TODO: Condense logging into a single line
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename StateRepresentation = vector<CellType>, size_t PartitionSize = 3>
-class IrreversibleCA1D
-    : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
+class IrreversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
 {
 #ifdef DEBUG
   public:
@@ -259,8 +256,7 @@ class IrreversibleCA1D
 /// Reversible 1D CA implementation (second-order and eventually block)
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename StateRepresentation = vector<CellType>, size_t PartitionSize = 3>
-class ReversibleCA1D
-    : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
+class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
 {
 #ifdef DEBUG
   public:
@@ -268,7 +264,7 @@ class ReversibleCA1D
   private:
 #endif
 
-    vector<CellType> previous_generation;
+    vector<CellType> prev_state;
 
     /**
      * @brief Execute the local state transition rule (partition maps to a permutation index used for getting
@@ -293,8 +289,7 @@ class ReversibleCA1D
             auto it = find(permutations.begin(), permutations.end(), partition);
             auto bit_offset = distance(permutations.begin(), it);
             auto first_order_state = (rule >> bit_offset) & 1;
-            LocalTransitionOutputType new_state =
-                previous_generation[cell] != first_order_state ? true : false;
+            LocalTransitionOutputType new_state = prev_state[cell] != first_order_state ? true : false;
 
             if (log)
                 cout << "update:\t\t" << this->_state[cell] << " -> " << first_order_state << endl;
@@ -315,7 +310,7 @@ class ReversibleCA1D
     StateRepresentation global_transition(size_t rule)
     {
         cout << "start state 1:\t";
-        print_vector(previous_generation);
+        print_vector(prev_state);
         cout << endl;
         cout << "start state 2:\t";
         print_vector(this->_state);
@@ -327,7 +322,7 @@ class ReversibleCA1D
             new_state[cell] = local_transition(cell, rule);
 
         // State transition
-        previous_generation = this->_state;
+        prev_state = this->_state;
         this->state(new_state);
         cout << "state: ";
         print_vector(this->_state);
@@ -340,7 +335,7 @@ class ReversibleCA1D
 #endif
     ReversibleCA1D(GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key)
         : CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(gateway_key),
-          previous_generation(random_1d_start_state(this->_state.size()))
+          prev_state(gateway_key.prev_state())
     {
     }
 
@@ -354,7 +349,7 @@ class ReversibleCA1D
     {
         cout << "rule:\t" << rule << endl;
         vector<StateRepresentation> state_history;
-        state_history.push_back(previous_generation);
+        state_history.push_back(prev_state);
         state_history.push_back(this->_state);
 
         // Evolve for @epochs and generate state history

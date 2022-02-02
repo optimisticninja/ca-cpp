@@ -23,9 +23,7 @@ class CA2D : public CA<CellType, StateRepresentation>
 
   protected:
     CA2D(GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key)
-        : CA<CellType, StateRepresentation>(
-              gateway_key.start_state()),
-          _gateway_key(gateway_key)
+        : CA<CellType, StateRepresentation>(gateway_key.start_state()), _gateway_key(gateway_key)
     {
     }
 
@@ -134,7 +132,6 @@ class IrreversibleCA2D : public CA2D<CellType, LocalTransitionOutputType, StateR
      */
     void evolve(int epochs, bool write_image)
     {
-
         // Reset state from previous runs
         this->_state = this->gateway_key().start_state();
         StateRepresentation last = this->_state;

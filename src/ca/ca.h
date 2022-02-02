@@ -15,8 +15,7 @@ using namespace std;
  * @tparam PartitionSize the size of the sliding window used to iterate over state for a transition (including
  * target cell)
  */
-template<typename CellType = bool, typename StateRepresentation = vector<CellType>>
-class CA
+template<typename CellType = bool, typename StateRepresentation = vector<CellType>> class CA
 {
   protected:
     /// State representation
