@@ -20,14 +20,14 @@
 //     concept Derived = std::is_same<U, Class1>::value || std::is_same<U, Class2>::value;
 /// Abstract 1D CA
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
-class CA1D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+         typename StateRepresentation = vector<CellType>, size_t PartitionSize = 3>
+class CA1D : public CA<CellType, StateRepresentation>
 {
 #ifndef DEBUG
   private:
 #endif
     /// Configuration/encoding of the CA
-    GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> _gateway_key;
+    GatewayKey1D<StateRepresentation, PartitionSize, CellType> _gateway_key;
 
 #ifndef DEBUG
   protected:
@@ -118,26 +118,26 @@ class CA1D : public CA<CellType, LocalTransitionOutputType, GlobalTransitionOutp
         return partition;
     }
 
-    CA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
-        : CA<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(
+    CA1D(GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key)
+        : CA<CellType, StateRepresentation>(
               gateway_key.start_state()),
           _gateway_key(gateway_key)
     {
     }
 
   public:
-    GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key() { return _gateway_key; }
+    GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key() { return _gateway_key; }
 
     virtual LocalTransitionOutputType local_transition(size_t cell, size_t rule, bool log = false) = 0;
-    virtual GlobalTransitionOutputType global_transition(size_t rule) = 0;
+    virtual StateRepresentation global_transition(size_t rule) = 0;
 };
 
 // TODO: Create optimized elementary CA for bool only that uses bitsets
 // TODO: Condense logging into a single line
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
+         typename StateRepresentation = vector<CellType>, size_t PartitionSize = 3>
 class IrreversibleCA1D
-    : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+    : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
 {
 #ifdef DEBUG
   public:
@@ -184,13 +184,13 @@ class IrreversibleCA1D
      * @param rule rule number to use in local transition
      * @return ending state
      */
-    GlobalTransitionOutputType global_transition(size_t rule)
+    StateRepresentation global_transition(size_t rule)
     {
         cout << "start state:\t";
         print_vector(this->gateway_key().start_state());
         cout << endl;
 
-        GlobalTransitionOutputType new_state(this->_state.begin(), this->_state.end());
+        StateRepresentation new_state(this->_state.begin(), this->_state.end());
 
         for (size_t cell = 0; cell < new_state.size(); cell++)
             new_state[cell] = local_transition(cell, rule);
@@ -206,8 +206,8 @@ class IrreversibleCA1D
 #ifndef DEBUG
   public:
 #endif
-    IrreversibleCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
-        : CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key)
+    IrreversibleCA1D(GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key)
+        : CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(gateway_key)
     {
     }
 
@@ -217,10 +217,10 @@ class IrreversibleCA1D
      * @param epochs number of timesteps to evolve for
      * @return vector of state history over time
      */
-    vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs)
+    vector<StateRepresentation> evolve_rule(size_t rule, size_t epochs)
     {
         cout << "rule:\t" << rule << endl;
-        vector<GlobalTransitionOutputType> state_history;
+        vector<StateRepresentation> state_history;
 
         // Reset state to initial state
         this->_state = this->gateway_key().start_state();
@@ -246,7 +246,7 @@ class IrreversibleCA1D
 
         // Enumerate all rules dependent on the total permutations
         for (size_t rule = 0; rule < pow(2, this->gateway_key().total_permutations()); rule++) {
-            vector<GlobalTransitionOutputType> state_history = evolve_rule(rule, epochs);
+            vector<StateRepresentation> state_history = evolve_rule(rule, epochs);
 
             if (write_image)
                 write_pgm(state_history, rule);
@@ -258,9 +258,9 @@ class IrreversibleCA1D
 // TODO: Condense logging into a single line
 /// Reversible 1D CA implementation (second-order and eventually block)
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename GlobalTransitionOutputType = vector<CellType>, size_t PartitionSize = 3>
+         typename StateRepresentation = vector<CellType>, size_t PartitionSize = 3>
 class ReversibleCA1D
-    : public CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>
+    : public CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
 {
 #ifdef DEBUG
   public:
@@ -312,7 +312,7 @@ class ReversibleCA1D
      * @param rule rule number to use in local transition
      * @return ending state
      */
-    GlobalTransitionOutputType global_transition(size_t rule)
+    StateRepresentation global_transition(size_t rule)
     {
         cout << "start state 1:\t";
         print_vector(previous_generation);
@@ -321,7 +321,7 @@ class ReversibleCA1D
         print_vector(this->_state);
         cout << endl;
 
-        GlobalTransitionOutputType new_state(this->_state.begin(), this->_state.end());
+        StateRepresentation new_state(this->_state.begin(), this->_state.end());
 
         for (size_t cell = 0; cell < new_state.size(); cell++)
             new_state[cell] = local_transition(cell, rule);
@@ -338,8 +338,8 @@ class ReversibleCA1D
 #ifndef DEBUG
   public:
 #endif
-    ReversibleCA1D(GatewayKey1D<GlobalTransitionOutputType, PartitionSize, CellType> gateway_key)
-        : CA1D<CellType, LocalTransitionOutputType, GlobalTransitionOutputType, PartitionSize>(gateway_key),
+    ReversibleCA1D(GatewayKey1D<StateRepresentation, PartitionSize, CellType> gateway_key)
+        : CA1D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(gateway_key),
           previous_generation(random_1d_start_state(this->_state.size()))
     {
     }
@@ -350,10 +350,10 @@ class ReversibleCA1D
      * @param epochs number of timesteps to evolve for
      * @return vector of state history over time
      */
-    vector<GlobalTransitionOutputType> evolve_rule(size_t rule, size_t epochs)
+    vector<StateRepresentation> evolve_rule(size_t rule, size_t epochs)
     {
         cout << "rule:\t" << rule << endl;
-        vector<GlobalTransitionOutputType> state_history;
+        vector<StateRepresentation> state_history;
         state_history.push_back(previous_generation);
         state_history.push_back(this->_state);
 
@@ -377,7 +377,7 @@ class ReversibleCA1D
 
         // Enumerate all rules dependent on the total permutations
         for (size_t rule = 0; rule < pow(2, this->gateway_key().total_permutations()); rule++) {
-            vector<GlobalTransitionOutputType> state_history = evolve_rule(rule, epochs);
+            vector<StateRepresentation> state_history = evolve_rule(rule, epochs);
 
             if (write_image)
                 write_pgm(state_history, rule, "second-order");

@@ -15,7 +15,7 @@
  */
 template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
          typename StateRepresentation = vector<vector<CellType>>, size_t PartitionSize = 8>
-class CA2D : public CA<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
+class CA2D : public CA<CellType, StateRepresentation>
 {
   private:
     /// Configuration/encoding of the CA
@@ -23,7 +23,7 @@ class CA2D : public CA<CellType, LocalTransitionOutputType, StateRepresentation,
 
   protected:
     CA2D(GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key)
-        : CA<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(
+        : CA<CellType, StateRepresentation>(
               gateway_key.start_state()),
           _gateway_key(gateway_key)
     {
