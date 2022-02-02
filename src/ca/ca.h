@@ -21,10 +21,7 @@ class CA
 {
   protected:
     /// State representation
-    size_t size;
     GlobalTransitionOutputType _state;
-
-    CA(size_t state_size) : size(state_size) {}
 
     CA(GlobalTransitionOutputType start_state) : _state(start_state) {}
 

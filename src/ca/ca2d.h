@@ -7,7 +7,7 @@
 #include "neighborhood.h"
 
 /**
- * Abstract 2D CA
+ * @brief Abstract 2D CA
  * @tparam CellType the type of the cells in the CA
  * @tparam LocalTransitionOutputType the output type of a local update
  * @tparam StateRepresentation the output type of the whole board (global update)
@@ -29,82 +29,8 @@ class CA2D : public CA<CellType, LocalTransitionOutputType, StateRepresentation,
     {
     }
 
-  public:
-    GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key() { return _gateway_key; }
-};
-
-/**
- * Irreversible 2D CA implementation
- * @tparam CellType the type of the cells in the CA
- * @tparam LocalTransitionOutputType the output type of a local update
- * @tparam StateRepresentation the output type of the whole board (global update)
- * @tparam PartitionSize the size of the partition (neighborhood)
- */
-template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
-         typename StateRepresentation = vector<vector<CellType>>, size_t PartitionSize = 8>
-class IrreversibleCA2D : public CA2D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
-{
-  private:
     /**
-     * Local transition of CA (cellular or block level)
-     * @param transition reference to the timestep after current that gets updated
-     * @param x column of the target cell
-     * @param y row of the target cell
-     */
-    void local_transition(StateRepresentation& transition, size_t x, size_t y)
-    {
-        switch (this->gateway_key().interaction()) {
-        case INTERACTION_GAME_OF_LIFE: {
-            CellType cell = this->_state[y][x];
-            vector<CellType> partition = this->partition(x, y);
-            int living_neighbors = accumulate(partition.begin(), partition.end(), 0);
-
-            if (/* living */ cell) {
-                // 2 or 3 neighbors survive, die from under/overcrowding
-                if (living_neighbors <= 1 || living_neighbors >= 4) {
-                    //                     cout << "under/over-crowding" << endl;
-                    transition[y][x] = false;
-                }
-            } else {
-                // Reproduction
-                if (living_neighbors == 3) {
-                    transition[y][x] = true;
-                    //                     cout << "reproduction" << endl;
-                }
-            }
-            break;
-        }
-        default:
-            cerr << "ERROR: IrreversibleCA2D::local_transition() : unsupported interaction" << endl;
-            exit(1);
-        }
-    }
-
-    // TODO: Optimize (group into blocks, only update those which changed, etc)
-    StateRepresentation global_transition()
-    {
-        StateRepresentation transition = this->_state;
-        for (size_t row = 0; row < this->_state.size(); row++) {
-            for (size_t column = 0; column < this->_state[0].size(); column++) {
-                //                 cout << "cell:\t\t(" << column << "," << row << ")" << endl;
-                local_transition(transition, column, row);
-                //                 cout << "transition:\t" << this->_state[row][column] << " -> " <<
-                //                 transition[row][column]
-                //                      << endl;
-            }
-        }
-
-        return transition;
-    }
-
-  public:
-    IrreversibleCA2D(GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key)
-        : CA2D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(gateway_key)
-    {
-    }
-
-    /**
-     * Get the partition (neighborhood) at target cell
+     * @brief Get the partition (neighborhood) at target cell
      * @param x column of target cell
      * @param y row of target cell
      * @return slice of cells/boundary in partition
@@ -123,6 +49,82 @@ class IrreversibleCA2D : public CA2D<CellType, LocalTransitionOutputType, StateR
         }
 
         return partition;
+    }
+
+  public:
+    virtual StateRepresentation global_transition() = 0;
+    virtual void local_transition(StateRepresentation& transition, size_t x, size_t y) = 0;
+
+    GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key() { return _gateway_key; }
+};
+
+/**
+ * @brief Irreversible 2D CA implementation
+ * @tparam CellType the type of the cells in the CA
+ * @tparam LocalTransitionOutputType the output type of a local update
+ * @tparam StateRepresentation the output type of the whole board (global update)
+ * @tparam PartitionSize the size of the partition (neighborhood)
+ */
+template<typename CellType = bool, typename LocalTransitionOutputType = CellType,
+         typename StateRepresentation = vector<vector<CellType>>, size_t PartitionSize = 8>
+class IrreversibleCA2D : public CA2D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>
+{
+  private:
+    /**
+     * @brief Local transition of CA (cellular or block level)
+     * @param transition reference to the timestep after current that gets updated
+     * @param x column of the target cell
+     * @param y row of the target cell
+     */
+    void local_transition(StateRepresentation& transition, size_t x, size_t y)
+    {
+        switch (this->gateway_key().interaction()) {
+        case INTERACTION_GAME_OF_LIFE: {
+            CellType cell = this->_state[y][x];
+            vector<CellType> partition = this->partition(x, y);
+            int living_neighbors = accumulate(partition.begin(), partition.end(), 0);
+
+            if (/* living */ cell) {
+                // 2 or 3 neighbors survive, die from under/overcrowding
+                if (living_neighbors <= 1 || living_neighbors >= 4) {
+                    cout << "under/over-crowding" << endl;
+                    transition[y][x] = false;
+                }
+            } else {
+                // Reproduction
+                if (living_neighbors == 3) {
+                    transition[y][x] = true;
+                    cout << "reproduction" << endl;
+                }
+            }
+            break;
+        }
+        default:
+            cerr << "ERROR: IrreversibleCA2D::local_transition() : unsupported interaction" << endl;
+            exit(1);
+        }
+    }
+
+    // TODO: Optimize (group into blocks, only update those which changed, etc)
+    StateRepresentation global_transition()
+    {
+        StateRepresentation transition = this->_state;
+        for (size_t row = 0; row < this->_state.size(); row++) {
+            for (size_t column = 0; column < this->_state[0].size(); column++) {
+                cout << "cell:\t\t(" << column << "," << row << ")" << endl;
+                local_transition(transition, column, row);
+                cout << "transition:\t" << this->_state[row][column] << " -> " << transition[row][column]
+                     << endl;
+            }
+        }
+
+        return transition;
+    }
+
+  public:
+    IrreversibleCA2D(GatewayKey2D<StateRepresentation, PartitionSize, CellType> gateway_key)
+        : CA2D<CellType, LocalTransitionOutputType, StateRepresentation, PartitionSize>(gateway_key)
+    {
     }
 
     /**

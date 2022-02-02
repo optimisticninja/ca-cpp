@@ -43,6 +43,7 @@ typedef enum {
 
 typedef enum {
     NEIGHBORHOOD_MOORE,
+    // TODO
     NEIGHBORHOOD_VON_NEUMANN,
     NEIGHBORHOOD_SMITH,
     NEIGHBORHOOD_COLE,
@@ -99,7 +100,7 @@ class GatewayKey1D : public GatewayKey<StateRepresentation, PartitionSize, CellT
     vector<vector<CellType>> _partition_permutations;
 
     /**
-     * Recursive function to generate all permutations of specified partition cells. Used
+     * @brief Recursive function to generate all permutations of specified partition cells. Used
      * for finding the index of a partition within the exhaustive set in CA1D::*_interaction()
      * and using it as a bit-shift within qualifying rules.
      * @param permutations: vector to store generated permutations in

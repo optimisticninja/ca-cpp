@@ -7,8 +7,8 @@ using namespace std;
 
 #define DEBUG
 
-const size_t STATE_SIZE = 480;
-const size_t EPOCHS = 360;
+const size_t STATE_SIZE = 31;
+const size_t EPOCHS = 15;
 const bool WRITE_IMAGES = true;
 
 void elementary_ca()
@@ -21,7 +21,7 @@ void elementary_ca()
 
 void game_of_life()
 {
-    vector<vector<bool>> start_state = random_2d_start_state(480, 320);
+    vector<vector<bool>> start_state = random_2d_start_state(STATE_SIZE, STATE_SIZE);
     GatewayKey2D<vector<vector<bool>>, 8, bool> gateway_key(start_state, CA_2D);
     Alias2D::Life ca(gateway_key);
     ca.evolve(10000, WRITE_IMAGES);
@@ -39,7 +39,7 @@ void second_order_ca()
 int main()
 {
     srand(time(NULL));
-    // elementary_ca();
+    elementary_ca();
     second_order_ca();
     //     game_of_life();
 }
