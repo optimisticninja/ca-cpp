@@ -69,10 +69,21 @@ template<typename StateRepresentation, size_t PartitionSize = 3, typename CellTy
     boundary_t _boundary;
     /// Start state of CA
     StateRepresentation _start_state;
+    /// Previous state (used for second order CAs that require two timesteps for initial seed)
+    StateRepresentation _prev_state;
 
-    GatewayKey(StateRepresentation start_state, geometric_shape_t shape, boundary_t boundary = BOUNDARY_ZERO,
+    GatewayKey(const StateRepresentation& start_state, geometric_shape_t shape,
+               boundary_t boundary = BOUNDARY_ZERO,
                interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT)
         : _shape(shape), _interaction(interaction), _boundary(boundary), _start_state(start_state)
+    {
+    }
+
+    GatewayKey(const StateRepresentation& start_state, const StateRepresentation& prev_state,
+               geometric_shape_t shape, boundary_t boundary = BOUNDARY_ZERO,
+               interaction_t interaction = INTERACTION_SECOND_ORDER_NEIGHBORHOOD_TO_RULE_BIT)
+        : _shape(shape), _interaction(interaction), _boundary(boundary), _start_state(start_state),
+          _prev_state(prev_state)
     {
     }
 
@@ -86,6 +97,8 @@ template<typename StateRepresentation, size_t PartitionSize = 3, typename CellTy
     size_t partition_size() { return PartitionSize; }
 
     StateRepresentation start_state() { return _start_state; }
+
+    StateRepresentation prev_state() { return _prev_state; }
 
     size_t state_size() { return _start_state.size(); }
 };
@@ -126,6 +139,21 @@ class GatewayKey1D : public GatewayKey<StateRepresentation, PartitionSize, CellT
                  boundary_t boundary = BOUNDARY_ZERO, partition_bias_t partition_bias = PARTITION_BIAS_LHS,
                  interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT)
         : GatewayKey<StateRepresentation, PartitionSize, CellType>(start_state, shape, boundary, interaction),
+          _partition_bias(partition_bias)
+    {
+        // Enumerate neighborhood permutations
+        vector<CellType> neighborhood(PartitionSize);
+        vector<vector<CellType>> permutations;
+        generate_partition_states(permutations, neighborhood, 0);
+        _partition_permutations = permutations;
+    }
+
+    GatewayKey1D(const StateRepresentation& start_state, const StateRepresentation& prev_state,
+                 geometric_shape_t shape, boundary_t boundary = BOUNDARY_ZERO,
+                 partition_bias_t partition_bias = PARTITION_BIAS_LHS,
+                 interaction_t interaction = INTERACTION_NEIGHBORHOOD_TO_RULE_BIT)
+        : GatewayKey<StateRepresentation, PartitionSize, CellType>(start_state, prev_state, shape, boundary,
+                                                                   interaction),
           _partition_bias(partition_bias)
     {
         // Enumerate neighborhood permutations
