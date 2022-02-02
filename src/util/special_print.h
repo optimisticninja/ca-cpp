@@ -5,11 +5,12 @@
 
 using namespace std;
 
-template<typename T> void print_vector(vector<T> v)
+template <typename T>
+ostream& operator<<(ostream& output, vector<T> const& values)
 {
-    cout << "[ ";
-    for (auto c : v) {
-        cout << c << " ";
-    }
-    cout << "]";
+    output << "[ ";
+    for (auto const& value : values)
+        output << value << " ";
+    output << "]";
+    return output;
 }

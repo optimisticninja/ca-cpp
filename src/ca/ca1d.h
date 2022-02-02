@@ -152,9 +152,7 @@ class IrreversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateR
     {
         auto partition = this->partition(cell);
         cout << "cell:\t\t" << cell << endl;
-        cout << "partition:\t";
-        print_vector(partition);
-        cout << endl;
+        cout << "partition:\t" << partition << endl;
 
         switch (this->gateway_key().interaction()) {
         // Rule Wolfram uses
@@ -183,10 +181,7 @@ class IrreversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateR
      */
     StateRepresentation global_transition(size_t rule)
     {
-        cout << "start state:\t";
-        print_vector(this->gateway_key().start_state());
-        cout << endl;
-
+        cout << "start state:\t" << this->gateway_key().start_state() << endl;
         StateRepresentation new_state(this->_state.begin(), this->_state.end());
 
         for (size_t cell = 0; cell < new_state.size(); cell++)
@@ -194,9 +189,7 @@ class IrreversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateR
 
         // State transition
         this->state(new_state);
-        cout << "state: ";
-        print_vector(this->_state);
-        cout << endl;
+        cout << "state: " << this->_state << endl;
         return this->_state;
     }
 
@@ -237,9 +230,7 @@ class IrreversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateR
      */
     void evolve_all(size_t epochs, bool write_image = false)
     {
-        cout << "start state:\t";
-        print_vector(this->gateway_key().start_state());
-        cout << endl;
+        cout << "start state:\t" << this->gateway_key().start_state() << endl;
 
         // Enumerate all rules dependent on the total permutations
         for (size_t rule = 0; rule < pow(2, this->gateway_key().total_permutations()); rule++) {
@@ -278,9 +269,7 @@ class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRep
     {
         auto partition = this->partition(cell);
         cout << "cell:\t\t" << cell << endl;
-        cout << "partition:\t";
-        print_vector(partition);
-        cout << endl;
+        cout << "partition:\t" << partition << endl;
 
         switch (this->gateway_key().interaction()) {
         case INTERACTION_SECOND_ORDER_NEIGHBORHOOD_TO_RULE_BIT: {
@@ -309,12 +298,8 @@ class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRep
      */
     StateRepresentation global_transition(size_t rule)
     {
-        cout << "start state 1:\t";
-        print_vector(prev_state);
-        cout << endl;
-        cout << "start state 2:\t";
-        print_vector(this->_state);
-        cout << endl;
+        cout << "start state 1:\t" << prev_state << endl;
+        cout << "start state 2:\t" << this->_state << endl;
 
         StateRepresentation new_state(this->_state.begin(), this->_state.end());
 
@@ -324,9 +309,7 @@ class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRep
         // State transition
         prev_state = this->_state;
         this->state(new_state);
-        cout << "state: ";
-        print_vector(this->_state);
-        cout << endl;
+        cout << "state: " << this->_state << endl;
         return this->_state;
     }
 
@@ -383,9 +366,7 @@ class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRep
      */
     void evolve_all(size_t epochs, bool write_image = false)
     {
-        cout << "start state:\t";
-        print_vector(this->gateway_key().start_state());
-        cout << endl;
+        cout << "start state:\t" << this->gateway_key().start_state() << endl;
 
         // Enumerate all rules dependent on the total permutations
         for (size_t rule = 0; rule < pow(2, this->gateway_key().total_permutations()); rule++) {
