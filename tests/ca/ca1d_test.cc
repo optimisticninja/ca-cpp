@@ -91,3 +91,24 @@ TEST(CA1D4P, LHSBiasing)
 }
 
 // TODO: ----------- END Parameterized tests
+
+TEST(SecondOrder, Reversible)
+{
+    const size_t STATE_SIZE = 31;
+    const size_t EPOCHS = 15;
+    vector<bool> start_state = random_1d_start_state(STATE_SIZE);
+    vector<bool> prev_state = random_1d_start_state(STATE_SIZE);
+    GatewayKey1D<vector<bool>> gateway_key(
+        start_state,
+        prev_state,
+        CA_1D,
+        BOUNDARY_CYCLIC,
+        PARTITION_BIAS_LHS,
+        INTERACTION_SECOND_ORDER_NEIGHBORHOOD_TO_RULE_BIT
+    );
+    Alias1D::SecondOrderCA ca(gateway_key);
+    vector<vector<bool>> forward = ca.evolve_rule(90, EPOCHS);
+    vector<vector<bool>> backward = ca.evolve_rule_reverse(90, EPOCHS, forward[forward.size() - 1], forward[forward.size() - 2]);
+    vector<vector<bool>> backward_reversed(backward.rbegin(), backward.rend());
+    ASSERT_EQ(forward, backward_reversed);
+}
