@@ -12,14 +12,6 @@ Currently implemented:
 * 2D
 	* Game of Life
 
-TODO:
-
-* 1D/2D margolus, critters, tron rule for block implementation
-    - See BlockCA1D in ca1d.h, partitioning and evolution loop written - need to implement rule
-* [Dynamic Rules in Elementary Celluar Automata](https://github.com/gojakuch/dynamic-rule-cellular-automata/blob/main/paper_SOECA.pdf)
-    - TODO: Create second-order rules from this implementation with similar "rule compiler"
-* Hashlife algorithm
-
 ## Terminology
 
 There is a lot of varying terminology between papers, this is my map for consistent code and more generic terms in some cases.
