@@ -359,6 +359,23 @@ class ReversibleCA1D : public CA1D<CellType, LocalTransitionOutputType, StateRep
         return state_history;
     }
 
+    // TODO: Feels ugly passing as params, should we just add setters for state/prev?
+    /**
+     * @brief Evolve @rule for @epochs
+     * @param rule rule number
+     * @param epochs number of timesteps to evolve for
+     * @param last last state of previously evolved CA
+     * @param before_last second to last state of previously evolved CA
+     * @return vector of state history over time
+     */
+    vector<StateRepresentation> evolve_rule_reverse(size_t rule, size_t epochs, const vector<bool>& last,
+                                                    const vector<bool>& before_last)
+    {
+        this->_state = before_last;
+        this->prev_state = last;
+        return evolve_rule(rule, epochs);
+    }
+
     /**
      * @brief Evolve all rules for @epochs (optionally write images)
      * @param epochs number of timesteps to evolve each rule for
